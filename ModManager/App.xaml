@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Application
+    x:Class="ModManager.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ModManager">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+            <FontFamily x:Key="CustomFont">/Assets/Fonts/zh-cn-l.ttf#SDK_SC_Web</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

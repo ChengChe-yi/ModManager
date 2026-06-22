@@ -1,0 +1,334 @@
+<Page
+    x:Class="ModManager.Views.DownloadsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:ModManager.Helpers"
+    xmlns:local="using:ModManager.Core.Models">
+
+    <Page.Resources>
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <Storyboard x:Name="EntranceStoryboard">
+            <DoubleAnimation
+                Storyboard.TargetName="RootGrid"
+                Storyboard.TargetProperty="Opacity"
+                From="0"
+                To="1"
+                Duration="0:0:0.4">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        <Storyboard x:Name="ExitStoryboard">
+            <DoubleAnimation
+                Storyboard.TargetName="RootGrid"
+                Storyboard.TargetProperty="Opacity"
+                From="1"
+                To="0"
+                Duration="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <!--  ListViewItem 行样式  -->
+        <Style x:Key="DownloadRowStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="MinHeight" Value="52" />
+            <Setter Property="Transitions">
+                <Setter.Value>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="10" IsStaggeringEnabled="False" />
+                        <AddDeleteThemeTransition />
+                        <ReorderThemeTransition />
+                    </TransitionCollection>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border
+                            x:Name="RootBorder"
+                            Margin="0,2"
+                            Padding="14,7"
+                            Background="Transparent"
+                            CornerRadius="8">
+                            <ContentPresenter
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Selected" />
+                                    <VisualState x:Name="PointerOverSelected">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="PressedSelected">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DownloadListViewStyle" TargetType="ListView">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="SelectionMode" Value="Single" />
+            <Setter Property="IsItemClickEnabled" Value="True" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DownloadRowStyle}" />
+        </Style>
+    </Page.Resources>
+
+    <Grid x:Name="RootGrid" Opacity="1">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  工具栏  -->
+        <Grid
+            Grid.Row="0"
+            Padding="12,8"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1"
+            ColumnSpacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Padding="8,4" Click="ResumeAll_Click" FontSize="12"
+                        ToolTipService.ToolTip="继续选中">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <FontIcon FontSize="12" Glyph="&#xE768;" />
+                        <TextBlock Text="继续" FontSize="12" />
+                    </StackPanel>
+                </Button>
+                <Button Padding="8,4" Click="PauseAll_Click" FontSize="12"
+                        ToolTipService.ToolTip="暂停选中">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <FontIcon FontSize="12" Glyph="&#xE769;" />
+                        <TextBlock Text="暂停" FontSize="12" />
+                    </StackPanel>
+                </Button>
+                <Button Padding="8,4" Click="DeleteSelected_Click" FontSize="12"
+                        ToolTipService.ToolTip="删除选中">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <FontIcon FontSize="12" Glyph="&#xE74D;" />
+                        <TextBlock Text="删除" FontSize="12" />
+                    </StackPanel>
+                </Button>
+                <Button Padding="8,4" Click="BatchClear_Click" FontSize="12"
+                        ToolTipService.ToolTip="取消选中">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <FontIcon FontSize="12" Glyph="&#xE711;" />
+                        <TextBlock Text="取消选中" FontSize="12" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!--  表头（Padding=30 对齐 DataTemplate 内容区：ListView(16)+Border(14)=30） -->
+        <Grid
+            x:Name="HeaderGrid"
+            Grid.Row="1"
+            Padding="30,8"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1"
+            ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="36" />
+                <ColumnDefinition Width="*" MinWidth="80" MaxWidth="200" />
+                <ColumnDefinition Width="Auto" MinWidth="130" />
+                <ColumnDefinition Width="Auto" MinWidth="65" />
+                <ColumnDefinition Width="Auto" MinWidth="75" />
+                <ColumnDefinition Width="Auto" MinWidth="70" />
+                <ColumnDefinition Width="Auto" MinWidth="65" />
+            </Grid.ColumnDefinitions>
+            <CheckBox
+                x:Name="SelectAllCheckBox"
+                Grid.Column="0"
+                MinWidth="20" MinHeight="20"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Checked="SelectAll_Checked"
+                Unchecked="SelectAll_Unchecked" />
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11" Opacity="0.5" Text="名称" />
+            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11" Opacity="0.5" Text="状态 / 进度" />
+            <TextBlock Grid.Column="3" VerticalAlignment="Center" FontSize="11" Opacity="0.5" Text="大小" />
+            <TextBlock Grid.Column="4" VerticalAlignment="Center" FontSize="11" Opacity="0.5" Text="速度" />
+            <TextBlock Grid.Column="5" VerticalAlignment="Center" FontSize="11" Opacity="0.5" Text="剩余" />
+            <TextBlock Grid.Column="6" VerticalAlignment="Center" FontSize="11" Opacity="0.5" Text="时间" />
+        </Grid>
+
+        <!--  下载列表  -->
+        <ListView
+            x:Name="TaskList"
+            Grid.Row="3"
+            Padding="16,8"
+            Style="{StaticResource DownloadListViewStyle}">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:DownloadTask">
+                    <Grid MinHeight="46" ColumnSpacing="8" Background="Transparent"
+                          PointerEntered="DownloadRow_GlowEntered"
+                          PointerExited="DownloadRow_GlowExited"
+                          PointerMoved="DownloadRow_GlowMoved">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="36" />
+                            <ColumnDefinition Width="*" MinWidth="80" MaxWidth="200" />
+                            <ColumnDefinition Width="Auto" MinWidth="130" />
+                            <ColumnDefinition Width="Auto" MinWidth="65" />
+                            <ColumnDefinition Width="Auto" MinWidth="75" />
+                            <ColumnDefinition Width="Auto" MinWidth="70" />
+                            <ColumnDefinition Width="Auto" MinWidth="65" />
+                        </Grid.ColumnDefinitions>
+
+                        <!--  1. CheckBox  -->
+                        <CheckBox
+                            Grid.Column="0"
+                            MinWidth="20" MinHeight="20"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            IsChecked="{x:Bind IsSelected, Mode=TwoWay}" />
+
+                        <!--  2. 图标 + 名称 + 类别  -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="15"
+                                    Text="{x:Bind FileIcon, Mode=OneWay}" />
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="13"
+                                    FontWeight="Medium"
+                                    MaxLines="1"
+                                    Text="{x:Bind Title, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <TextBlock
+                                Margin="22,1,0,0"
+                                FontSize="10"
+                                Opacity="0.5"
+                                Text="{x:Bind Category, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+
+                        <!--  3. 状态 + 进度条  -->
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Spacing="3">
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{x:Bind StatusTextBrush, Mode=OneWay}"
+                                Text="{x:Bind StatusDisplayText, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis" />
+
+                            <!--  进度条：固定宽度，左对齐 -->
+                            <ProgressBar Height="4" Width="120" Minimum="0" Maximum="100"
+                                         HorizontalAlignment="Left"
+                                         Value="{x:Bind PercentDouble, Mode=OneWay}"
+                                         IsIndeterminate="{x:Bind IsIndeterminate, Mode=OneWay}"
+                                         Foreground="{x:Bind ProgressGradientBrush, Mode=OneWay}"
+                                         Visibility="{x:Bind HasProgressBar, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+
+                        <!--  4. 大小  -->
+                        <TextBlock
+                            Grid.Column="3"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{x:Bind SizeDisplayText, Mode=OneWay}" />
+
+                        <!--  5. 速度  -->
+                        <TextBlock
+                            Grid.Column="4"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{x:Bind SpeedDisplayText, Mode=OneWay}"
+                            Visibility="{x:Bind HasSpeed, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                        <!--  6. 剩余时间  -->
+                        <TextBlock
+                            Grid.Column="5"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="{x:Bind EtaDisplayText, Mode=OneWay}" />
+
+                        <!--  7. 添加时间  -->
+                        <TextBlock
+                            Grid.Column="6"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FontSize="10"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Text="{x:Bind RelativeTimeText, Mode=OneWay}" />
+
+                        <!--  光晕（随鼠标移动的径向渐变）  -->
+                        <Canvas x:Name="GlowHost" Grid.ColumnSpan="7"
+                                Width="0" Height="0"
+                                HorizontalAlignment="Left" VerticalAlignment="Top"
+                                IsHitTestVisible="False">
+                            <Ellipse x:Name="HoverGlow" Width="120" Height="120"
+                                     IsHitTestVisible="False" Opacity="0">
+                                <Ellipse.Fill>
+                                    <RadialGradientBrush>
+                                        <GradientStop Offset="0" Color="#40FFFFFF" />
+                                        <GradientStop Offset="1" Color="Transparent" />
+                                    </RadialGradientBrush>
+                                </Ellipse.Fill>
+                                <Ellipse.RenderTransform>
+                                    <TranslateTransform X="-60" Y="-60" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Canvas>
+
+                        <!--  波纹容器（跨全行，不阻挡点击）  -->
+                        <Canvas x:Name="RippleHost" Grid.ColumnSpan="7"
+                                IsHitTestVisible="False" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <TextBlock
+            x:Name="EmptyHint"
+            Grid.Row="3"
+            Margin="0,60,0,0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            FontSize="14"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Text="暂无下载任务&#x0a;通过浏览器扩展或 API 添加下载"
+            TextAlignment="Center" />
+    </Grid>
+</Page>

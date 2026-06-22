@@ -1,0 +1,892 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="ModManager.Views.CharacterPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:community="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:converters="using:ModManager.Core.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:ModManager.Core.Models"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="TagChipBackground" Color="#3B82F6" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="TagChipBackground" Color="#306699FF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="TagChipBackground" Color="#306699FF" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+
+        <!--  芯片模板（标签=蓝色，名称=灰色前缀"名称:"）  -->
+        <DataTemplate x:Key="TagChipTemplate">
+            <Border Height="22" Margin="0,0,4,0" Padding="8,0,2,0" VerticalAlignment="Center"
+                    Background="{ThemeResource TagChipBackground}" CornerRadius="10">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="White"
+                               Margin="0,0,4,0" Text="{Binding}" />
+                    <Button Width="16" Height="16" Padding="2" Background="Transparent"
+                            BorderThickness="0" Tag="{Binding}" Click="ChipRemoveButton_Click">
+                        <FontIcon FontSize="8" Glyph="&#xE711;" Foreground="White" />
+                    </Button>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- 展示标签芯片模板（角色卡片用，只读） -->
+        <DataTemplate x:Key="DisplayTagChipTemplate" x:DataType="x:String">
+            <Border Height="20" Margin="0,0,4,2" Padding="8,0" VerticalAlignment="Center"
+                    Background="{ThemeResource TagChipBackground}" CornerRadius="10">
+                <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="White" Text="{x:Bind}" />
+            </Border>
+        </DataTemplate>
+        <converters:BoolToStatusConverter x:Key="BoolToStatusConverter" />
+        <converters:ModCountFormatterConverter x:Key="ModCountFormatterConverter" />
+        <converters:StatusToBrushConverter x:Key="StatusToBrushConverter" />
+        <converters:CollectionCountToVisibilityConverter x:Key="CollectionCountToVisibilityConverter" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+        <converters:BoolToTextDecorationsConverter x:Key="BoolToTextDecorationsConverter" />
+
+        <!-- ====== 卡片样式 ====== -->
+        <Style x:Key="GlassCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+
+        <!-- ====== ListViewItem 通用样式（对齐 ModManagePage） ====== -->
+        <Style x:Key="GlassListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border
+                            x:Name="RootBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                            <Grid x:Name="ContentGrid">
+                                <Grid.RenderTransform>
+                                    <CompositeTransform
+                                        x:Name="ItemTransform"
+                                        ScaleX="1.0"
+                                        ScaleY="1.0"
+                                        TranslateY="0" />
+                                </Grid.RenderTransform>
+                                <ContentPresenter
+                                    x:Name="ContentPresenter"
+                                    Margin="{TemplateBinding Padding}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    ContentTransitions="{TemplateBinding ContentTransitions}" />
+                            </Grid>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal" />
+                                    <VisualState x:Name="PointerOver">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.15" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#30FFFFFF" Duration="0:0:0.15" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleX" To="0.96" Duration="0:0:0.05" />
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleY" To="0.96" Duration="0:0:0.05" />
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="TranslateY" To="2" Duration="0:0:0.05" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#10FFFFFF" Duration="0:0:0.05" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="Transparent" Duration="0:0:0.05" />
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Selected">
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#25FFFFFF" Duration="0" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="Transparent" Duration="0" />
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="PointerOverSelected">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.15" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#35FFFFFF" Duration="0:0:0.15" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#A0FFFFFF" Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="PressedSelected">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleX" To="0.96" Duration="0:0:0.05" />
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="ScaleY" To="0.96" Duration="0:0:0.05" />
+                                            <DoubleAnimation Storyboard.TargetName="ItemTransform" Storyboard.TargetProperty="TranslateY" To="2" Duration="0:0:0.05" />
+                                            <ColorAnimation Storyboard.TargetName="RootBorder" Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#18FFFFFF" Duration="0:0:0.05" />
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="GlassListViewStyle" TargetType="ListView">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8" />
+        </Style>
+
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <!-- ====== 标签 Chip 样式 ====== -->
+        <Style x:Key="TagChipStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Margin" Value="0,0,4,2" />
+        </Style>
+
+        <Style x:Key="TagTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <!-- ====== 页面动画 ====== -->
+        <Storyboard x:Name="EntranceStoryboard">
+            <DoubleAnimation
+                Storyboard.TargetName="RootLayoutGrid"
+                Storyboard.TargetProperty="Opacity"
+                From="0"
+                To="1"
+                Duration="0:0:0.6">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation
+                Storyboard.TargetName="RootLayoutTranslate"
+                Storyboard.TargetProperty="Y"
+                From="40"
+                To="0"
+                Duration="0:0:0.6">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="ExitStoryboard">
+            <DoubleAnimation
+                Storyboard.TargetName="RootLayoutGrid"
+                Storyboard.TargetProperty="Opacity"
+                From="1"
+                To="0"
+                Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="PreviewEntranceStoryboard">
+            <DoubleAnimation
+                BeginTime="0:0:0.25"
+                Storyboard.TargetName="DetailPanel"
+                Storyboard.TargetProperty="Opacity"
+                From="0"
+                To="1"
+                Duration="0:0:0.6">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="CharacterListStoryboard">
+            <DoubleAnimation Storyboard.TargetName="CharacterListBorder" Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.35">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CharacterListTranslate" Storyboard.TargetProperty="Y"
+                             From="16" To="0" Duration="0:0:0.4">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CharacterListScale" Storyboard.TargetProperty="ScaleX"
+                             From="0.96" To="1" Duration="0:0:0.4">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="CharacterListScale" Storyboard.TargetProperty="ScaleY"
+                             From="0.96" To="1" Duration="0:0:0.4">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="ModListStoryboard">
+            <DoubleAnimation Storyboard.TargetName="ModListBorder" Storyboard.TargetProperty="Opacity"
+                             From="0.85" To="1" Duration="0:0:0.15" BeginTime="0:0:0">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ModListTranslate" Storyboard.TargetProperty="Y"
+                             From="3" To="0" Duration="0:0:0.15" BeginTime="0:0:0">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ModListScale" Storyboard.TargetProperty="ScaleX"
+                             From="0.99" To="1" Duration="0:0:0.15" BeginTime="0:0:0">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="ModListScale" Storyboard.TargetProperty="ScaleY"
+                             From="0.99" To="1" Duration="0:0:0.15" BeginTime="0:0:0">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="PresetListStoryboard">
+            <DoubleAnimation Storyboard.TargetName="PresetListBorder" Storyboard.TargetProperty="Opacity"
+                             From="0.85" To="1" Duration="0:0:0.15">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PresetListTranslate" Storyboard.TargetProperty="Y"
+                             From="3" To="0" Duration="0:0:0.15">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PresetListScale" Storyboard.TargetProperty="ScaleX"
+                             From="0.99" To="1" Duration="0:0:0.15">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PresetListScale" Storyboard.TargetProperty="ScaleY"
+                             From="0.99" To="1" Duration="0:0:0.15">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="PreviewImageStoryboard">
+            <DoubleAnimation
+                Storyboard.TargetName="ModPreviewImage"
+                Storyboard.TargetProperty="Opacity"
+                From="0"
+                To="1"
+                Duration="0:0:0.35">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation
+                Storyboard.TargetName="PreviewImageScale"
+                Storyboard.TargetProperty="ScaleX"
+                From="0.92"
+                To="1"
+                Duration="0:0:0.45">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation
+                Storyboard.TargetName="PreviewImageScale"
+                Storyboard.TargetProperty="ScaleY"
+                From="0.92"
+                To="1"
+                Duration="0:0:0.45">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid
+        x:Name="RootLayoutGrid"
+        Opacity="0"
+        RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="RootLayoutScale" ScaleX="1" ScaleY="1" />
+                <TranslateTransform x:Name="RootLayoutTranslate" X="0" Y="0" />
+            </TransformGroup>
+        </Grid.RenderTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.5*" />
+            <ColumnDefinition Width="0.5*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ========== 左侧：搜索栏 + 角色/Mod 双列表 ========== -->
+        <Grid Grid.Row="1" Grid.Column="0" Margin="16,8,8,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />   <!-- 统一搜索栏 -->
+                <RowDefinition Height="*" />      <!-- 角色 + Mod 列表 -->
+            </Grid.RowDefinitions>
+
+            <!--  统一搜索栏：第一行=元素图标+芯片+清除，第二行=搜索框  -->
+            <Border
+                Grid.Row="0"
+                Margin="0,0,0,10"
+                Padding="6,4"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!--  行 0：元素筛选 | 芯片 | 全部/角色 | 清除  -->
+                    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto">
+                        <ScrollViewer Grid.Column="0" MaxWidth="320"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <StackPanel x:Name="QuickFilterPanel" Orientation="Horizontal" Spacing="2" />
+                        </ScrollViewer>
+
+                        <Border Grid.Column="1" Width="1" Margin="4,2"
+                                VerticalAlignment="Stretch"
+                                Background="{ThemeResource TextControlBorderBrush}" />
+
+                        <ScrollViewer Grid.Column="2"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="ChipsItemsControl" VerticalAlignment="Center">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <Button Grid.Column="3" x:Name="ClearAllButton"
+                                Width="24" Height="24" Padding="2"
+                                Background="Transparent" BorderThickness="0"
+                                Click="ClearAllButton_Click"
+                                ToolTipService.ToolTip="清除全部条件"
+                                Visibility="Collapsed">
+                            <FontIcon FontSize="10" Glyph="&#xE711;"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Button>
+                    </Grid>
+
+                    <!--  行 1：搜索输入框  -->
+                    <TextBox Grid.Row="1" x:Name="SearchBox"
+                             Margin="6,2,4,0"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             FontSize="13"
+                             PlaceholderText="输入搜索，Enter 提交为标签..." />
+                </Grid>
+            </Border>
+
+            <!-- ====== Row 2: 角色 + Mod 列表 ====== -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.32*" />
+                    <ColumnDefinition Width="0.68*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- ====== 角色列表 ====== -->
+                <Border
+                    x:Name="CharacterListBorder"
+                    Grid.Column="0"
+                    Margin="0,0,6,0"
+                    Padding="0"
+                    RenderTransformOrigin="0.5,0.5"
+                    Style="{StaticResource GlassCardStyle}">
+                    <Border.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform x:Name="CharacterListScale" ScaleX="1" ScaleY="1" />
+                            <TranslateTransform x:Name="CharacterListTranslate" X="0" Y="0" />
+                        </TransformGroup>
+                    </Border.RenderTransform>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid x:Name="CharacterLoadingOverlay" Grid.Row="0" Visibility="Collapsed"
+                              Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" Opacity="0.8">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+                                <ProgressRing IsActive="True" Width="32" Height="32" />
+                                <TextBlock Text="加载中..." FontSize="13"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid x:Name="CharacterEmptyHint" Grid.Row="0" Visibility="Collapsed"
+                              VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="暂无角色" FontSize="14" TextAlignment="Center"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Grid>
+                        <ListView
+                            x:Name="ListView_Character"
+                            Grid.Row="0"
+                            ItemContainerStyle="{StaticResource GlassListViewItemStyle}"
+                            Style="{StaticResource GlassListViewStyle}"
+                            DoubleTapped="ListView_Character_DoubleTapped"
+                            RightTapped="ListView_Character_RightTapped"
+                            SelectionChanged="ListView_Character_SelectionChanged">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="local:CharacterCategory">
+                                        <Grid
+                                            Background="Transparent"
+                                            PointerEntered="Character_PointerEntered"
+                                            PointerExited="Character_PointerExited"
+                                            PointerMoved="Character_PointerMoved">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+                                            <!-- 光晕（直接子元素，与 ModItem 模板对齐） -->
+                                            <Canvas
+                                                Grid.RowSpan="2"
+                                                Width="0"
+                                                Height="0"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                IsHitTestVisible="False">
+                                                <Ellipse
+                                                    x:Name="HoverGlow"
+                                                    Width="120"
+                                                    Height="120"
+                                                    IsHitTestVisible="False"
+                                                    Opacity="0">
+                                                    <Ellipse.Fill>
+                                                        <RadialGradientBrush>
+                                                            <GradientStop Offset="0" Color="#40FFFFFF" />
+                                                            <GradientStop Offset="1" Color="Transparent" />
+                                                        </RadialGradientBrush>
+                                                    </Ellipse.Fill>
+                                                    <Ellipse.RenderTransform>
+                                                        <TranslateTransform X="-60" Y="-60" />
+                                                    </Ellipse.RenderTransform>
+                                                </Ellipse>
+                                            </Canvas>
+                                            <!-- 角色名称行 -->
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Image
+                                                        Grid.Column="0"
+                                                        Width="60"
+                                                        Height="60"
+                                                        Margin="0,0,12,0"
+                                                        VerticalAlignment="Center"
+                                                        Opacity="{x:Bind IsEnabled, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}"
+                                                        Source="{x:Bind ImagePath, Mode=OneWay, Converter={StaticResource StringToImageSourceConverter}}"
+                                                        Stretch="Uniform" />
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            FontWeight="SemiBold"
+                                                            Opacity="{x:Bind IsEnabled, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}"
+                                                            Style="{ThemeResource BaseTextBlockStyle}"
+                                                            Text="{x:Bind DisplayName, Mode=OneWay}"
+                                                            TextDecorations="{x:Bind IsEnabled, Mode=OneWay, Converter={StaticResource BoolToTextDecorationsConverter}}"
+                                                            TextTrimming="CharacterEllipsis" />
+                                                        <!-- 展示标签：仅元素 + 武器，放在名字下面 -->
+                                                        <ItemsControl
+                                                            Margin="0,2,0,0"
+                                                            Opacity="{x:Bind IsEnabled, Mode=OneWay, Converter={StaticResource BoolToOpacityConverter}}"
+                                                            ItemTemplate="{StaticResource DisplayTagChipTemplate}"
+                                                            ItemsSource="{x:Bind DisplayTags, Mode=OneWay}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <StackPanel Orientation="Horizontal" />
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Grid>
+                                        <!--  波纹容器  -->
+                                        <Canvas x:Name="RippleHost" Grid.RowSpan="2"
+                                                IsHitTestVisible="False" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        <Button
+                            x:Name="AddCharacterButton"
+                            Grid.Row="1"
+                            HorizontalAlignment="Stretch"
+                            Margin="8,4,8,8"
+                            Padding="8,6"
+                            Background="Transparent"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Click="AddCharacterButton_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <FontIcon FontSize="12" Glyph="&#xE710;" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="添加角色" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- ====== Mod 列表 ====== -->
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border
+                        x:Name="ModListBorder"
+                        Grid.Row="0"
+                        Margin="6,0,0,0"
+                        Padding="0"
+                        RenderTransformOrigin="0.5,0.5"
+                        Style="{StaticResource GlassCardStyle}">
+                        <Border.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform x:Name="ModListScale" ScaleX="1" ScaleY="1" />
+                                <TranslateTransform x:Name="ModListTranslate" X="0" Y="0" />
+                            </TransformGroup>
+                        </Border.RenderTransform>
+                        <Grid x:Name="ModListContainer">
+                            <Grid x:Name="ModLoadingOverlay" Visibility="Collapsed"
+                                  VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <ProgressRing IsActive="True" Width="28" Height="28" />
+                            </Grid>
+                            <Grid x:Name="ModEmptyHint" Visibility="Collapsed"
+                                  VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="暂无 Mod" FontSize="13"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                        <ListView
+                            x:Name="ListView_Mod"
+                            ItemContainerStyle="{StaticResource GlassListViewItemStyle}"
+                            Style="{StaticResource GlassListViewStyle}"
+                            AllowDrop="True"
+                            DoubleTapped="ListView_Mod_DoubleTapped"
+                            DragOver="ListView_Mod_DragOver"
+                            Drop="ListView_Mod_Drop"
+                            RightTapped="ListView_Mod_RightTapped"
+                            SelectionChanged="ListView_Mod_SelectionChanged">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="local:ModItem">
+                                            <Grid
+                                                Background="Transparent"
+                                                PointerEntered="ModItem_PointerEntered"
+                                                PointerExited="ModItem_PointerExited"
+                                                PointerMoved="ModItem_PointerMoved">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <!-- 光晕 -->
+                                                <Canvas
+                                                    x:Name="HoverGlowCanvas"
+                                                    Width="0"
+                                                    Height="0"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    IsHitTestVisible="False">
+                                                    <Ellipse
+                                                        x:Name="HoverGlow"
+                                                        Width="120"
+                                                        Height="120"
+                                                        IsHitTestVisible="False"
+                                                        Opacity="0">
+                                                        <Ellipse.Fill>
+                                                            <RadialGradientBrush>
+                                                                <GradientStop Offset="0" Color="#40FFFFFF" />
+                                                                <GradientStop Offset="1" Color="Transparent" />
+                                                            </RadialGradientBrush>
+                                                        </Ellipse.Fill>
+                                                        <Ellipse.RenderTransform>
+                                                            <TranslateTransform X="-60" Y="-60" />
+                                                        </Ellipse.RenderTransform>
+                                                    </Ellipse>
+                                                </Canvas>
+                                                <!-- 启用/禁用指示条 -->
+                                                <Border
+                                                    Grid.Column="0"
+                                                    Width="4"
+                                                    Height="40"
+                                                    Margin="0,4,8,4"
+                                                    CornerRadius="2">
+                                                    <Border.Background>
+                                                        <Binding Converter="{StaticResource StatusToBrushConverter}" Path="Enable" />
+                                                    </Border.Background>
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <Grid>
+                                                        <TextBlock
+                                                            x:Name="ModNameTextBlock"
+                                                            Margin="0,0,0,4"
+                                                            HorizontalAlignment="Left"
+                                                            FontSize="14"
+                                                            FontWeight="SemiBold"
+                                                            Style="{ThemeResource BaseTextBlockStyle}"
+                                                            Text="{x:Bind DisplayName, Mode=OneWay}" />
+                                                        <TextBox
+                                                            x:Name="ModNameTextBox"
+                                                            Margin="0,0,0,4"
+                                                            HorizontalAlignment="Left"
+                                                            FontSize="14"
+                                                            FontWeight="SemiBold"
+                                                            Visibility="Collapsed" />
+                                                    </Grid>
+                                                    <TextBlock
+                                                        HorizontalAlignment="Left"
+                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                                        Text="{x:Bind Enable, Converter={StaticResource BoolToStatusConverter}}" />
+                                                </StackPanel>
+                                            <!--  波纹容器  -->
+                                            <Canvas x:Name="RippleHost" Grid.ColumnSpan="2"
+                                                    IsHitTestVisible="False" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                        </Grid>
+                    </Border>
+                    <!-- 拖放提示 -->
+                    <Border
+                        Grid.Row="1"
+                        Margin="6,4,0,0"
+                        Padding="8"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        CornerRadius="4"
+                        Visibility="Collapsed">
+                        <TextBlock
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="将文件夹拖放到此处以添加 Mod" />
+                    </Border>
+                </Grid>
+            </Grid>
+
+        </Grid>
+
+        <!-- ========== 右侧：详情面板 ========== -->
+        <Grid
+            x:Name="DetailPanel"
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin="8,8,16,8"
+            Opacity="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- ====== 预览图区域 ====== -->
+            <Border Grid.Row="0" Margin="0,0,0,8" Padding="12" CornerRadius="8">
+                <Border.Background>
+                    <AcrylicBrush FallbackColor="#60FFFFFF" TintColor="#80FFFFFF" TintOpacity="0.3" />
+                </Border.Background>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid x:Name="ImageViewerGrid" Grid.Row="0" Visibility="Collapsed">
+                        <Border Margin="4" Padding="4" Background="Transparent" CornerRadius="6">
+                            <Image
+                                x:Name="ModPreviewImage"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Opacity="0"
+                                Stretch="Uniform"
+                                RenderTransformOrigin="0.5,0.5"
+                                ImageOpened="ModPreviewImage_ImageOpened">
+                                <Image.RenderTransform>
+                                    <ScaleTransform x:Name="PreviewImageScale" ScaleX="1" ScaleY="1" />
+                                </Image.RenderTransform>
+                            </Image>
+                            <Border.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Click="Button_PasteClipboardImage_Click" Text="粘贴或替换为剪贴板中的图片" />
+                                    <MenuFlyoutItem
+                                        x:Name="MenuFlyoutItem_DeleteThisModPreviewPicture"
+                                        Click="MenuFlyoutItem_DeleteThisModPreviewPicture_Click"
+                                        Text="删除这张预览图" />
+                                </MenuFlyout>
+                            </Border.ContextFlyout>
+                        </Border>
+                    </Grid>
+
+                    <Button
+                        x:Name="AddImageButton"
+                        Grid.Row="0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Click="Button_PasteClipboardImage_Click"
+                        Style="{StaticResource ModernButtonStyle}"
+                        Visibility="Visible">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <SymbolIcon Symbol="Paste" />
+                            <TextBlock Text="粘贴剪贴板图片" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ====== Mod 按键配置表格 ====== -->
+            <Border
+                x:Name="ModKeyListBorder"
+                Grid.Row="1"
+                Style="{StaticResource GlassCardStyle}"
+                Visibility="Collapsed">
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" IsExpanded="True">
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button x:Name="PresetToggleButton"
+                                    Content="预设 ▶"
+                                    Click="PresetToggle_Click"
+                                    FontSize="12" Padding="8,4"
+                                    Style="{StaticResource ModernButtonStyle}" />
+                            <TextBlock VerticalAlignment="Center"
+                                       x:Name="KeyListHeaderText"
+                                       Style="{StaticResource BaseTextBlockStyle}"
+                                       Text="Mod按键列表" />
+                        </StackPanel>
+                    </Expander.Header>
+
+                    <StackPanel Spacing="8">
+                        <!-- 预设面板 (替换按键列表位置) -->
+                        <Grid x:Name="PresetPanel" Visibility="Collapsed" RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- 预设列表 -->
+                            <Grid x:Name="PresetListViewPanel" Grid.Row="0" RowSpacing="4">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                                               Text="预设" FontWeight="SemiBold" FontSize="13" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                        <Button Content="+ 新建" Click="PresetNew_Click"
+                                                Style="{StaticResource ModernButtonStyle}" FontSize="12" Padding="8,4" />
+                                        <Button Content="📥 从INI创建" Click="PresetReadCreate_Click"
+                                                Style="{StaticResource ModernButtonStyle}" FontSize="12" Padding="8,4" />
+                                    </StackPanel>
+                                </Grid>
+                                <ListView x:Name="PresetListView" Grid.Row="1"
+                                          MaxHeight="280" SelectionMode="Single">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnSpacing="4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                                                           Text="{Binding Name}" FontSize="13" />
+                                                <HyperlinkButton Grid.Column="1" Content="编辑"
+                                                                 Click="PresetEdit_Click" FontSize="12" Padding="4,2" />
+                                                <HyperlinkButton Grid.Column="2" Content="应用"
+                                                                 Click="PresetApply_Click" FontSize="12" Padding="4,2" />
+                                                <HyperlinkButton Grid.Column="3" Content="删除"
+                                                                 Click="PresetDelete_Click" FontSize="12" Padding="4,2" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+
+                            <!-- 编辑栏 (名称 + 完成) -->
+                            <Grid x:Name="PresetEditPanel" Grid.Row="1" Visibility="Collapsed"
+                                  ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                                           Text="名称:" FontSize="13" />
+                                <TextBox Grid.Column="1" x:Name="PresetEditNameBox"
+                                         FontSize="13" MinWidth="100" />
+                                <Button Grid.Column="2" Content="✓ 完成"
+                                        Click="PresetEditDone_Click"
+                                        Style="{StaticResource ModernButtonStyle}" FontSize="12" Padding="6,4" />
+                            </Grid>
+                        </Grid>
+
+                        <!-- 按键列表 / 预设值表 -->
+                        <community:DataGrid
+                            x:Name="DataGrid_ModKeyList"
+                            MinHeight="60"
+                            MaxHeight="280"
+                            HorizontalAlignment="Stretch"
+                            AutoGenerateColumns="False"
+                            BorderThickness="0"
+                            CanUserReorderColumns="False"
+                            CanUserSortColumns="True"
+                            IsReadOnly="True"
+                            IsTabStop="False"
+                            SelectionMode="Single">
+                            <community:DataGrid.Resources>
+                                <Color x:Key="DataGridRowSelectedBackgroundColor">Transparent</Color>
+                                <Color x:Key="DataGridRowSelectedUnfocusedBackgroundColor">Transparent</Color>
+                                <Color x:Key="DataGridRowSelectedHoveredBackgroundColor">Transparent</Color>
+                                <Color x:Key="DataGridRowSelectedHoveredUnfocusedBackgroundColor">Transparent</Color>
+                                <SolidColorBrush x:Key="DataGridCellFocusVisualPrimaryBrush" Color="Transparent" />
+                                <SolidColorBrush x:Key="DataGridCellFocusVisualSecondaryBrush" Color="Transparent" />
+                            </community:DataGrid.Resources>
+                            <community:DataGrid.Columns>
+                                <community:DataGridTextColumn Width="Auto" Binding="{Binding KeyName}" Header="按键名称" IsReadOnly="True" />
+                                <community:DataGridTextColumn Width="Auto" MinWidth="60" Binding="{Binding VariableName}" Header="变量名" IsReadOnly="True" />
+                                <community:DataGridTextColumn Width="Auto" MinWidth="55" Binding="{Binding InitialValue}" Header="初始值" IsReadOnly="True" />
+                                <community:DataGridTextColumn Width="*" MinWidth="70" Binding="{Binding KeyValue}" Header="可选值" IsReadOnly="True" />
+                                <community:DataGridTextColumn Width="Auto" MinWidth="65" Binding="{Binding CurrentIniValue}" Header="状态值" IsReadOnly="False" />
+                            </community:DataGrid.Columns>
+                        </community:DataGrid>
+                    </StackPanel>
+                </Expander>
+            </Border>
+
+        </Grid>
+    </Grid>
+</Page>

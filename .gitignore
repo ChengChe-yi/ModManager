@@ -1,0 +1,56 @@
+# ====== .NET ======
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# ====== Visual Studio ======
+.vs/
+*.DotSettings.user
+*.sln.ide/
+
+# ====== 项目文档 & AI ======
+docs/
+.claude/
+
+# ====== 版权素材（不上传） ======
+ModManager/Assets/
+
+# ====== 浏览器扩展 ======
+ModManager/Extension/
+
+# ====== VS Code ======
+.vscode/
+
+# ====== Windows App SDK ======
+*.msix
+*.msixupload
+*.appx
+*.appxbundle
+*.appxupload
+
+# ====== 运行时配置（用户本地数据） ======
+ModManager/bin/**/Setting/settings.json
+
+# ====== 操作系统 ======
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ====== 编译产物 ======
+*.pdb
+*.ilk
+*.obj
+*.exe
+*.dll
+*.winmd
+*.tmp
+~$*
+
+# ====== JetBrains Rider ======
+.idea/
+*.sln.iml

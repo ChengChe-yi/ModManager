@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="ModManager.Application/ModManager.Application.csproj" Id="cbaab00b-7559-4f7c-a394-cea5f275e9bd" />
+  <Project Path="ModManager.Core/ModManager.Core.csproj" Id="f1b8d11f-a017-4406-8a9d-9db0fe79e809" />
+  <Project Path="ModManager/ModManager.csproj">
+    <Platform Solution="*|ARM64" Project="ARM64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Deploy />
+  </Project>
+</Solution>
